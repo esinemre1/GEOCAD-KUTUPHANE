@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoCAD Satellite Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        .leaflet-container { background: #000; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        
+        /* Custom Map Tooltip Styling */
+        .custom-tooltip {
+            background: rgba(17, 24, 39, 0.9) !important;
+            border: 1px solid rgba(75, 85, 99, 0.5) !important;
+            color: #ef4444 !important;
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            padding: 2px 6px !important;
+            border-radius: 4px !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+            white-space: nowrap !important;
+            pointer-events: none !important;
+        }
+        .custom-tooltip:before { border-top-color: rgba(17, 24, 39, 0.9) !important; }
+
+        .custom-search-marker {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "leaflet": "https://esm.sh/leaflet@^1.9.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "dxf-parser": "https://esm.sh/dxf-parser@^1.1.2",
+    "proj4": "https://esm.sh/proj4@^2.15.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-900 text-white font-sans">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
