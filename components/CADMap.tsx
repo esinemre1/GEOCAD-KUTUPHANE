@@ -277,11 +277,59 @@ const CADMap: React.FC<CADMapProps> = ({
     const map = mapRef.current;
     if (!map) return;
 
-    const onLocationFound = (e: L.LocationEvent) => {
-      if (onLocationUpdate) onLocationUpdate(e.latlng.lat, e.latlng.lng);
+    let watchId: string | null = null;
+
+    const startWatching = async () => {
+      try {
+        // Native Platform Check
+        if (Capacitor.isNativePlatform()) {
+          const permission = await Geolocation.checkPermissions();
+          if (permission.location !== 'granted') {
+            const requested = await Geolocation.requestPermissions();
+            if (requested.location !== 'granted') {
+              if (onLocationError) onLocationError("Konum izni reddedildi.");
+              return;
+            }
+          }
+
+          watchId = await Geolocation.watchPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 1000
+          }, (position, err) => {
+            if (err) {
+              console.error('Location Error', err);
+              // if (onLocationError) onLocationError(err.message); // Don't spam errors
+              return;
+            }
+            if (position) {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              updateLocationMarker(lat, lng);
+            }
+          });
+        } else {
+          // Web Fallback
+          map.locate({ watch: true, enableHighAccuracy: true });
+          map.on('locationfound', (e) => updateLocationMarker(e.latlng.lat, e.latlng.lng));
+          map.on('locationerror', (e) => {
+            if (onLocationError) onLocationError(e.message);
+          });
+        }
+      } catch (error: any) {
+        console.error("Location Service Error: ", error);
+        if (onLocationError) onLocationError("Konum servisi başlatılamadı: " + error.message);
+      }
+    };
+
+    const updateLocationMarker = (lat: number, lng: number) => {
+      if (!map) return;
+      const latlng = L.latLng(lat, lng);
+
+      if (onLocationUpdate) onLocationUpdate(lat, lng);
 
       if (!locationMarkerRef.current) {
-        locationMarkerRef.current = L.circleMarker(e.latlng, {
+        locationMarkerRef.current = L.circleMarker(latlng, {
           radius: 8,
           fillColor: '#3b82f6',
           color: '#ffffff',
@@ -290,36 +338,24 @@ const CADMap: React.FC<CADMapProps> = ({
           fillOpacity: 0.9
         }).addTo(map);
 
-        map.flyTo(e.latlng, 17);
+        map.flyTo(latlng, 17);
       } else {
-        locationMarkerRef.current.setLatLng(e.latlng);
+        locationMarkerRef.current.setLatLng(latlng);
       }
 
       if (stakeoutTarget && stakeoutLineRef.current) {
-        stakeoutLineRef.current.setLatLngs([e.latlng, [stakeoutTarget.lat, stakeoutTarget.lng]]);
-      }
-    };
-
-    const onLocationErrorInternal = (e: L.ErrorEvent) => {
-      map.stopLocate();
-      if (onLocationError) {
-        onLocationError(e.message);
+        stakeoutLineRef.current.setLatLngs([latlng, [stakeoutTarget.lat, stakeoutTarget.lng]]);
       }
     };
 
     if (isLocationEnabled) {
-      if (!navigator.geolocation) {
-        if (onLocationError) onLocationError("Geolocation not supported by browser");
-        return;
-      }
-
-      map.on('locationfound', onLocationFound);
-      map.on('locationerror', onLocationErrorInternal);
-      map.locate({ watch: true, enableHighAccuracy: true });
+      startWatching();
     } else {
+      // Cleanup
+      if (watchId) Geolocation.clearWatch({ id: watchId });
       map.stopLocate();
-      map.off('locationfound', onLocationFound);
-      map.off('locationerror', onLocationErrorInternal);
+      map.off('locationfound');
+      map.off('locationerror');
 
       if (locationMarkerRef.current) {
         map.removeLayer(locationMarkerRef.current);
@@ -329,16 +365,14 @@ const CADMap: React.FC<CADMapProps> = ({
         map.removeLayer(stakeoutLineRef.current);
         stakeoutLineRef.current = null;
       }
-      if (stakeoutMarkerRef.current) {
-        map.removeLayer(stakeoutMarkerRef.current);
-        stakeoutMarkerRef.current = null;
-      }
     }
 
     return () => {
+      if (watchId) Geolocation.clearWatch({ id: watchId });
       if (map) {
-        map.off('locationfound', onLocationFound);
-        map.off('locationerror', onLocationErrorInternal);
+        map.stopLocate();
+        map.off('locationfound');
+        map.off('locationerror');
       }
     };
   }, [isLocationEnabled, onLocationError, onLocationUpdate, stakeoutTarget]);
