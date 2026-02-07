@@ -37,11 +37,14 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Change wrapper permissions
-        run: chmod +x android/gradlew
+      - name: Fix Gradlew Permissions and Line Endings
+        run: |
+          cd android
+          chmod +x gradlew
+          sed -i 's/\r$//' gradlew
 
       - name: Build APK with Gradle
-        run: cd android && ./gradlew assembleDebug
+        run: cd android && ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
