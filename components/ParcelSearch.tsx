@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Search, Loader2 } from "lucide-react";
+
 import { Language } from "../types";
+import { Capacitor } from '@capacitor/core';
+
 
 export interface ParcelSearchProps {
     onParcelFound: (geojson: any) => void;
@@ -39,11 +42,23 @@ const TRANSLATIONS = {
     }
 };
 
+const getApiHeaders = () => {
+    if (Capacitor.isNativePlatform()) {
+        return {
+            'Referer': 'https://parselsorgu.tkgm.gov.tr/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        };
+    }
+    return {};
+};
+
+const getBaseUrl = () => Capacitor.isNativePlatform() ? 'https://cbsapi.tkgm.gov.tr/megsiswebapi.v3.1/api' : '/api/cbs';
+
 const ProxyAPI = {
-    getIl: () => axios.get("/api/cbs/idariYapi/ilListe"),
-    getIlce: (ilId: number) => axios.get(`/api/cbs/idariYapi/ilceListe/${ilId}`),
-    getMahalle: (ilceId: number) => axios.get(`/api/cbs/idariYapi/mahalleListe/${ilceId}`),
-    getParsel: (mahalleId: number, ada: string, parsel: string) => axios.get(`/api/cbs/parsel/${mahalleId}/${ada}/${parsel}`),
+    getIl: () => axios.get(`${getBaseUrl()}/idariYapi/ilListe`, { headers: getApiHeaders() }),
+    getIlce: (ilId: number) => axios.get(`${getBaseUrl()}/idariYapi/ilceListe/${ilId}`, { headers: getApiHeaders() }),
+    getMahalle: (ilceId: number) => axios.get(`${getBaseUrl()}/idariYapi/mahalleListe/${ilceId}`, { headers: getApiHeaders() }),
+    getParsel: (mahalleId: number, ada: string, parsel: string) => axios.get(`${getBaseUrl()}/parsel/${mahalleId}/${ada}/${parsel}`, { headers: getApiHeaders() }),
 };
 
 const ParcelSearch: React.FC<ParcelSearchProps> = ({ onParcelFound, lang }) => {
